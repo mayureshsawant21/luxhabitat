@@ -1,0 +1,9 @@
+{
+  "name": "LuxHabitat Mumbai (PHP)",
+  "image": "mcr.microsoft.com/devcontainers/php:8.3",
+  "postStartCommand": "nohup php -d upload_max_filesize=64M -d post_max_size=80M -d memory_limit=256M -S 0.0.0.0:8000 dev-router.php > /tmp/php-server.log 2>&1 &",
+  "forwardPorts": [8000],
+  "portsAttributes": {
+    "8000": { "label": "Website", "onAutoForward": "openBrowser" }
+  }
+}

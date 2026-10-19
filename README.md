@@ -42,6 +42,9 @@ If your host does not support `.htaccess` rewrites, set `PRETTY_URLS` to `false`
 ## Backups
 Download `data/luxhabitat.sqlite` and the `uploads/` folder. Together they hold all content and leads.
 
+## Run it on GitHub (Codespaces)
+On the repository page click **Code → Codespaces → Create codespace on this branch**. The PHP server starts automatically and the website opens in a new tab (port 8000). Admin: add `/admin/login.php` to that URL. A codespace stops after ~30 minutes of inactivity — reopen it from the same menu to start the site again (your data is kept).
+
 ## Local development
 ```bash
 php -S localhost:8000 dev-router.php
