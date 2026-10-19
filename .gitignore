@@ -1,0 +1,6 @@
+/data/*.sqlite
+/data/*.sqlite-*
+/uploads/images/*
+!/uploads/images/.gitkeep
+/uploads/brochures/*
+!/uploads/brochures/.htaccess
