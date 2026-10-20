@@ -109,8 +109,7 @@ $checked = fn($k, $v) => in_array($v, $f[$k], true) ? 'checked' : '';
         </label>
       </div>
 
-      <?php if ($active): ?>
-        <div class="chips">
+      <div class="chips" <?= $active ? '' : 'hidden' ?>>
           <?php foreach ($active as [$k, $v, $label]):
               $q = $_GET;
               if (str_ends_with($k, '[]')) {
@@ -121,15 +120,12 @@ $checked = fn($k, $v) => in_array($v, $f[$k], true) ? 'checked' : '';
               } ?>
             <a class="chip" href="<?= url('projects' . ($q ? '?' . http_build_query($q) : '')) ?>"><?= e($label) ?> <span aria-hidden="true">&times;</span></a>
           <?php endforeach; ?>
-        </div>
-      <?php endif; ?>
+      </div>
 
-      <?php if ($results): ?>
-        <div class="cards cards--listing">
-          <?php foreach ($results as $i => $p) include __DIR__ . '/includes/project-card.php'; ?>
-        </div>
-      <?php else: ?>
-        <div class="empty">
+      <div class="cards cards--listing">
+        <?php foreach ($results as $i => $p) include __DIR__ . '/includes/project-card.php'; ?>
+      </div>
+        <div class="empty" <?= $results ? 'hidden' : '' ?>>
           <h3 class="display">No exact matches — yet.</h3>
           <p>Our advisors have access to off-market and pre-launch inventory. Tell us what you&rsquo;re looking for.</p>
           <div class="empty__actions">
@@ -137,7 +133,6 @@ $checked = fn($k, $v) => in_array($v, $f[$k], true) ? 'checked' : '';
             <a href="<?= url('projects') ?>" class="btn btn--line"><span>Clear filters</span></a>
           </div>
         </div>
-      <?php endif; ?>
     </div>
   </div>
   <div class="filters-backdrop" data-filters-close></div>

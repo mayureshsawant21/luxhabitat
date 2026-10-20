@@ -123,6 +123,28 @@
     });
   });
 
+  /* ---------- Static (GitHub Pages) thank-you page ---------- */
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return '&#' + c.charCodeAt(0) + ';'; }); };
+  if (window.LX.static && body.classList.contains('page-thanks') && $('.thanks__actions')) {
+    var tq = new URLSearchParams(location.search);
+    var tp = (window.LX.projects || {})[tq.get('p')];
+    var tsrc = tq.get('src') || '';
+    var tname = '';
+    try { tname = (sessionStorage.getItem('lxName') || '').split(' ')[0]; } catch (e) {}
+    var canDl = tp && tq.get('dl') && tp.brochure;
+    var h1 = $('.thanks h1');
+    if (h1 && $('.thanks__text')) {
+      h1.textContent = canDl ? 'Your brochure is ready' : tsrc === 'site-visit' ? 'Your site visit is being arranged' : 'Thank you' + (tname ? ', ' + tname : '');
+      if (canDl) $('.thanks__text').textContent = 'Your download of the ' + tp.name + ' e-brochure should begin automatically. If it doesn’t, use the button below.';
+      else if (tp) $('.thanks__text').innerHTML = 'Our advisor will call you shortly with details on <strong>' + esc(tp.name) + '</strong>.';
+      var acts = '';
+      if (canDl) acts += '<a class="btn btn--gold" href="' + esc(tp.brochure) + '" download data-autodl>Download brochure</a>';
+      if (tp) acts += '<a class="btn btn--line" href="' + esc(tp.url) + '"><span>Back to ' + esc(tp.name) + '</span></a>';
+      acts += '<a class="btn btn--' + (tp ? 'line' : 'dark') + '" href="' + esc(window.LX.base + '/projects/') + '"><span>Explore more projects</span></a>';
+      $('.thanks__actions').innerHTML = acts;
+    }
+  }
+
   /* ---------- Split headings into animated words ---------- */
   $$('[data-split]').forEach(function (el) {
     var words = el.textContent.trim().split(/\s+/);
@@ -224,6 +246,23 @@
       var btn = $('button[type="submit"]', form);
       btn.classList.add('is-loading');
       btn.querySelector('span').textContent = 'Submitting…';
+      if (window.LX.static) {
+        // No server on GitHub Pages: optionally send the lead to a form service, then show the thank-you page
+        e.preventDefault();
+        var data = {};
+        new FormData(form).forEach(function (v, k) { if (k !== 'website') data[k] = v; });
+        try { sessionStorage.setItem('lxName', data.name || ''); } catch (err) {}
+        var src = data.source || 'enquiry';
+        var next = window.LX.thanks + '?src=' + encodeURIComponent(src) +
+          (+data.project_id ? '&p=' + data.project_id : '') + (src === 'brochure' ? '&dl=1' : '');
+        var endpoint = (window.LX_CONFIG || {}).leadEndpoint;
+        var go = function () { location.href = next; };
+        if (endpoint) {
+          fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data), keepalive: true })
+            .then(go, go);
+          setTimeout(go, 4000);
+        } else go();
+      }
     });
   });
 
@@ -329,6 +368,7 @@
         })
         .catch(function () { location.href = url; });
     };
+    if (window.LX.static) update = staticFilter(filters, results);
     filters.addEventListener('change', function () { update(false); });
     document.addEventListener('change', function (e) { if (e.target.matches('[data-sort]')) update(false); });
     var q = $('input[name="q"]', filters);
@@ -338,6 +378,105 @@
       if (e.target.closest('[data-filters-open]')) { body.classList.add('filters-open'); }
       if (e.target.closest('[data-filters-close]')) { body.classList.remove('filters-open'); }
     });
+  }
+
+  /* Client-side filtering for the GitHub Pages build (same rules as the PHP version) */
+  function staticFilter(form, results) {
+    var cards = $$('.card', results);
+    var grid = $('.cards', results);
+    var BUDGET = { '0-1': [0, 1], '1-2': [1, 2], '2-5': [2, 5], '5-10': [5, 10], '10-0': [10, 0] };
+    var CARPET = { '0-500': [0, 500], '500-800': [500, 800], '800-1200': [800, 1200], '1200-2000': [1200, 2000], '2000-0': [2000, 0] };
+    var sortSel = $('select[data-sort]');
+
+    // Pre-fill the form from the URL (e.g. coming from the home-page search)
+    var qs = new URLSearchParams(location.search);
+    $$('input', form).forEach(function (i) {
+      var vals = qs.getAll(i.name);
+      if (i.type === 'checkbox') i.checked = vals.indexOf(i.value) > -1;
+      else if (i.type === 'radio') i.checked = (qs.get(i.name) || '') === i.value;
+      else if (i.name === 'q') i.value = qs.get('q') || '';
+    });
+    if (sortSel && qs.get('sort')) sortSel.value = qs.get('sort');
+
+    function apply(closeDrawer) {
+      var fd = new FormData(form);
+      var locs = fd.getAll('location[]'), cfgs = fd.getAll('config[]'), sts = fd.getAll('status[]');
+      var budget = fd.get('budget') || '', carpet = fd.get('carpet') || '', q = (fd.get('q') || '').trim().toLowerCase();
+      var sort = sortSel ? sortSel.value : 'featured';
+      var shown = cards.filter(function (c) {
+        var d = c.dataset, ok = true;
+        if (locs.length && locs.indexOf(d.loc) < 0) ok = false;
+        if (ok && sts.length && sts.indexOf(d.status) < 0) ok = false;
+        if (ok && cfgs.length) { var mine = d.cfg.split(' '); ok = cfgs.some(function (x) { return mine.indexOf(x) > -1; }); }
+        if (ok && BUDGET[budget]) {
+          var p = +d.price, b = BUDGET[budget];
+          ok = p > 0 && p >= b[0] * 1e7 && (!b[1] || p <= b[1] * 1e7);
+        }
+        if (ok && CARPET[carpet]) {
+          var r = CARPET[carpet];
+          ok = d.carpets.split(',').some(function (pair) {
+            var ab = pair.split('-'), a = +ab[0], z = +ab[1] || a;
+            return (a || z) && z >= r[0] && (!r[1] || a <= r[1]);
+          });
+        }
+        if (ok && q) ok = d.text.indexOf(q) > -1;
+        c.hidden = !ok;
+        if (ok) c.classList.add('is-in');
+        return ok;
+      });
+      var maxArea = function (c) { return Math.max.apply(null, c.dataset.carpets.split(/[,-]/).map(Number).concat(0)); };
+      shown.sort(function (a, b) {
+        var A = a.dataset, B = b.dataset;
+        if (sort === 'price_asc') return (+A.price || 9e15) - (+B.price || 9e15);
+        if (sort === 'price_desc') return +B.price - +A.price;
+        if (sort === 'area_desc') return maxArea(b) - maxArea(a);
+        if (sort === 'newest') return +B.id - +A.id;
+        return (+B.featured - +A.featured) || (+A.order - +B.order);
+      }).forEach(function (c) { grid.appendChild(c); });
+
+      $('.results__count', results).innerHTML = '<b>' + shown.length + '</b> project' + (shown.length === 1 ? '' : 's') + ' found';
+      $('.empty', results).hidden = shown.length > 0;
+
+      // Active filter chips
+      var chips = $('.chips', results), html = '';
+      $$('input:checked', form).forEach(function (i) {
+        if (!i.value) return;
+        html += '<button type="button" class="chip" data-chip-name="' + esc(i.name) + '" data-chip-value="' + esc(i.value) + '">' + esc(i.parentElement.querySelector('span').textContent) + ' <span aria-hidden="true">&times;</span></button>';
+      });
+      if (q) html += '<button type="button" class="chip" data-chip-name="q">“' + esc(q) + '” <span aria-hidden="true">&times;</span></button>';
+      chips.innerHTML = html;
+      chips.hidden = !html;
+      var n = $$('.chip', chips).length;
+      var fb = $('.results__filter-btn', results);
+      if (fb) fb.lastChild.textContent = ' Filters' + (n ? ' (' + n + ')' : '');
+
+      // Keep a shareable URL
+      var params = new URLSearchParams();
+      fd.forEach(function (v, k) { if (v !== '' && k !== 'sort') params.append(k, v); });
+      if (sort !== 'featured') params.set('sort', sort);
+      history.replaceState(null, '', location.pathname + (params.toString() ? '?' + params : ''));
+      if (closeDrawer) body.classList.remove('filters-open');
+      if (lenis) lenis.resize();
+    }
+
+    results.addEventListener('click', function (e) {
+      var chip = e.target.closest('[data-chip-name]');
+      if (!chip) return;
+      var name = chip.dataset.chipName;
+      if (name === 'q') $('input[name="q"]', form).value = '';
+      else $$('input', form).forEach(function (i) {
+        if (i.name !== name || i.value !== chip.dataset.chipValue) return;
+        if (i.type === 'radio') { var any = $('input[name="' + name + '"][value=""]', form); if (any) any.checked = true; }
+        else i.checked = false;
+      });
+      apply(false);
+    });
+    var clear = $('.filters__reset', form);
+    if (clear) clear.addEventListener('click', function (e) { e.preventDefault(); form.reset(); $$('input[type="checkbox"]', form).forEach(function (i) { i.checked = false; }); $$('input[type="radio"][value=""]', form).forEach(function (i) { i.checked = true; }); $('input[name="q"]', form).value = ''; apply(false); });
+    var emptyClear = $('.empty a', results);
+    if (emptyClear) emptyClear.addEventListener('click', function (e) { e.preventDefault(); clear && clear.click(); });
+    apply(false);
+    return apply;
   }
 
   /* ---------- Project page: sub-nav, amenities, lightbox, EMI ---------- */

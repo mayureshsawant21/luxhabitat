@@ -30,6 +30,14 @@ $menuLocations = array_slice(array_keys(filter_options(get_projects())['location
 document.documentElement.classList.add('js');
 try { if (sessionStorage.getItem('lxSeen')) document.documentElement.classList.add('no-preload'); } catch (e) {}
 window.LX = { base: <?= json_encode(BASE) ?>, placeholder: <?= json_encode(placeholder()) ?> };</script>
+<?php if (STATIC_BUILD):
+    $lxProjects = [];
+    foreach (get_projects() as $sp) {
+        $lxProjects[$sp['id']] = ['name' => $sp['name'], 'url' => project_url($sp), 'brochure' => $sp['brochure'] ? img($sp['brochure']) : ''];
+    } ?>
+<script>window.LX.static = true; window.LX.projects = <?= json_encode($lxProjects, JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>; window.LX.thanks = <?= json_encode(url('thank-you')) ?>;</script>
+<script src="<?= BASE ?>/site-config.js"></script>
+<?php endif; ?>
 <?= setting('head_scripts') ?>
 </head>
 <body class="<?= e($bodyClass) ?>">

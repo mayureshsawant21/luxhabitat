@@ -42,6 +42,12 @@ If your host does not support `.htaccess` rewrites, set `PRETTY_URLS` to `false`
 ## Backups
 Download `data/luxhabitat.sqlite` and the `uploads/` folder. Together they hold all content and leads.
 
+## GitHub Pages preview (static version)
+GitHub Pages can't run PHP, so the repository also contains a **static HTML copy** of the site (`index.html`, `projects/`, `project/…/`, `about/`, `contact/`, `privacy-policy/`, `thank-you/`, `404.html`), served at **https://mayureshsawant21.github.io/luxhabitat/**.
+- Home, search, filters & sorting, project pages, pop-ups, brochure download and thank-you page all work.
+- There is no admin panel and no lead saving on Pages. To receive enquiries by email, put a free [Formspree](https://formspree.io) endpoint in `site-config.js`.
+- After changing PHP templates or demo data, regenerate the copy with `php tools/build-static.php` (use `php tools/build-static.php ""` for a custom domain) and commit.
+
 ## Run it on GitHub (Codespaces)
 On the repository page click **Code → Codespaces → Create codespace on this branch**. The PHP server starts automatically and the website opens in a new tab (port 8000). Admin: add `/admin/login.php` to that URL. A codespace stops after ~30 minutes of inactivity — reopen it from the same menu to start the site again (your data is kept).
 

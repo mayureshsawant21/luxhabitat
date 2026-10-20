@@ -29,7 +29,12 @@ function save_setting(string $key, string $value): void
 function url(string $path = ''): string
 {
     $path = ltrim($path, '/');
-    if (!PRETTY_URLS) {
+    if (STATIC_BUILD && $path !== '') {
+        // GitHub Pages serves folders: /projects/ , /project/slug/
+        [$p, $q] = array_pad(explode('?', $path, 2), 2, null);
+        if (!str_contains($p, '.')) $path = rtrim($p, '/') . '/' . ($q !== null ? '?' . $q : '');
+    }
+    if (!PRETTY_URLS && !STATIC_BUILD) {
         $map = ['projects' => 'projects.php', 'thank-you' => 'thank-you.php', 'contact' => 'contact.php', 'about' => 'about.php', 'privacy-policy' => 'privacy.php'];
         if (preg_match('#^project/([^/?]+)(.*)$#', $path, $m)) {
             $path = 'project.php?slug=' . $m[1] . str_replace('?', '&', $m[2]);
@@ -228,7 +233,7 @@ function filter_options(array $projects): array
         }
     }
     ksort($loc);
-    $cfg = array_keys($cfg);
+    $cfg = array_map('strval', array_keys($cfg)); // PHP turns numeric keys like "2" into ints
     usort($cfg, function ($a, $b) {
         $na = ctype_digit($a); $nb = ctype_digit($b);
         if ($na && $nb) return (int)$a <=> (int)$b;

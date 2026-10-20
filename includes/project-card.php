@@ -3,7 +3,12 @@
 $amenCount = count($p['amenities']);
 $cardImg = $p['thumbnail'] ?: $p['elevation'] ?: ($p['gallery'][0] ?? '');
 ?>
-<article class="card" data-reveal style="--d: <?= (int)(($i ?? 0) % 3) ?>">
+<article class="card" data-reveal style="--d: <?= (int)(($i ?? 0) % 3) ?>"
+  data-id="<?= (int)$p['id'] ?>" data-loc="<?= e($p['location']) ?>" data-status="<?= e($p['status']) ?>"
+  data-cfg="<?= e(implode(' ', array_unique(array_map(fn($c) => config_key($c['type'] ?? ''), $p['configurations'])))) ?>"
+  data-price="<?= (int)$p['starting_price'] ?>" data-featured="<?= (int)$p['featured'] ?>" data-order="<?= (int)$p['sort_order'] ?>"
+  data-carpets="<?= e(implode(',', array_map(fn($c) => (int)($c['carpet_min'] ?? 0) . '-' . ((int)($c['carpet_max'] ?? 0) ?: (int)($c['carpet_min'] ?? 0)), $p['configurations']))) ?>"
+  data-text="<?= e(strtolower($p['name'] . ' ' . $p['location'] . ' ' . $p['developer'] . ' ' . $p['city'])) ?>">
   <a href="<?= e(project_url($p)) ?>" class="card__link" aria-label="<?= e($p['name']) ?>">
     <div class="card__media">
       <img src="<?= e(img($cardImg)) ?>" alt="<?= e($p['name']) ?>, <?= e($p['location']) ?>" loading="lazy" onerror="this.onerror=null;this.src=LX.placeholder">

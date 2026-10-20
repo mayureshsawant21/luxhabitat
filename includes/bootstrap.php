@@ -6,7 +6,9 @@
 declare(strict_types=1);
 
 define('ROOT', dirname(__DIR__));
-define('DATA_DIR', ROOT . '/data');
+if (!defined('DATA_DIR')) define('DATA_DIR', ROOT . '/data');
+// true only while tools/build-static.php renders the GitHub Pages version
+if (!defined('STATIC_BUILD')) define('STATIC_BUILD', false);
 define('UPLOAD_DIR', ROOT . '/uploads');
 define('DEFAULT_ADMIN_PASSWORD', 'luxhabitat123');
 
